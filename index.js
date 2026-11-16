@@ -33,6 +33,7 @@ app.post("/api/chat", async (req, res) => {
         error: "OPENROUTER_API_KEY belum diatur di .env atau Environment Variables",
       });
     }
+    //
 
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
