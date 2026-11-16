@@ -25,4 +25,24 @@ app.post('/api/chat', async (req, res) => {
             return res.status(400).json({ error: "Message harus berupa array" });
         }
 
-        
+        // 5. Integrasi OpenRouter: Mengirim request ke API OpenRouter menggunakan model Gemini
+        const response = await fetch('https://api.openrouter.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: "google/gemini-2.5-flash",
+                messages: message,
+                temperature: 0.7,
+                max_tokens: 1000,
+                stream: true
+            }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.text();
+            console.error("OpenRouter Error:", errorData);
+            return res.status(response.status).json({ error: errorData });
+        }
