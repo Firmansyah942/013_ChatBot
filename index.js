@@ -12,7 +12,7 @@ const OPENROUTER_MODEL =
   process.env.OPENROUTER_MODEL || "nvidia/nemotron-3.5-super-vl:free";
 
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static("Publik"));
 
 app.get("/", (req, res) => {
   res.redirect("/index.html");
