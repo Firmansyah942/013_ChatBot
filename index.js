@@ -46,3 +46,44 @@ app.post('/api/chat', async (req, res) => {
             console.error("OpenRouter Error:", errorData);
             return res.status(response.status).json({ error: errorData });
         }
+
+        // 6. Konfigurasi SSE (Server-Sent Events): Mengatur header agar server bisa mengirim data secara streaming real-time
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        let buffer = '';
+
+        // 7. Looping Stream Reader: Membaca potongan byte data (chunk) yang dikirim oleh API secara bertahap
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                
+                if (!trimmedLine.startsWith('data: ')) continue;
+                const data = trimmedLine.slice(5).trim();
+                if (data === '[DONE]') continue;
+
+                try {
+                    const json = JSON.parse(data);
+                    const content = json.choices[0]?.delta?.content;
+                    // 8. Kirim Potongan Teks: Meneruskan teks respons AI ke client secara real-time via SSE
+                    if (content) {
+                        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+                    }
+                } catch (err) {
+                    console.error("Gagal parsing streaming data:", err);
+                }
+            }
+        }
+
+        
