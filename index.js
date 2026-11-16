@@ -57,7 +57,25 @@ app.post('/api/chat', async (req, res) => {
 
         let buffer = '';
 
-        
+        // 7. Looping Stream Reader: Membaca potongan byte data (chunk) yang dikirim oleh API secara bertahap
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                
+                if (!trimmedLine.startsWith('data: ')) continue;
+                const data = trimmedLine.slice(5).trim();
+                if (data === '[DONE]') continue;
+
+                try {
+                    const json = JSON.parse(data);
+                    const content = json.choices[0]?.delta?.content;
                     // 8. Kirim Potongan Teks: Meneruskan teks respons AI ke client secara real-time via SSE
                     if (content) {
                         res.write(`data: ${JSON.stringify({ content })}\n\n`);
@@ -68,4 +86,17 @@ app.post('/api/chat', async (req, res) => {
             }
         }
 
-        
+        // 9. Penanda Selesai: Mengirim sinyal [DONE] dan menutup koneksi HTTP setelah stream selesai
+        res.write(`data: [DONE]\n\n`);
+        res.end();
+
+    } catch (error) {
+        console.error("Server error:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: "Terjadi kesalahan pada server" });
+        } else {
+            res.write(`data: ${JSON.stringify({ error: "Terjadi kesalahan pada server" })}\n\n`);
+            res.end();
+        }
+    }
+});
