@@ -100,3 +100,8 @@ app.post('/api/chat', async (req, res) => {
         }
     }
 });
+
+// 10. Menjalankan Server: Mengaktifkan aplikasi Express pada port yang ditentukan
+app.listen(port, () => {
+    console.log(`Server berjalan di http://localhost:${port}`);
+});
